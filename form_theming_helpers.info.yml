@@ -1,0 +1,5 @@
+name: 'Form theming helpers'
+type: module
+description: 'Adds BEM classes to form elements, containers and labels'
+package: Custom
+core: 8.x

@@ -1,0 +1,106 @@
+<?php
+
+/**
+ * @file
+ * Main module functions.
+ */
+
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_element_info_alter().
+ */
+function form_theming_helpers_element_info_alter(array &$types) {
+  // Add a process callback for all #type container elements.
+  $types['container']['#process'][] = 'form_theming_helpers_container_process';
+  foreach ($types as $id => $type) {
+    // For any elements that go via form-element.html.twig, add a process
+    // callback.
+    if (isset($type['#theme_wrappers']) && in_array('form_element', $type['#theme_wrappers'], TRUE)) {
+      $types[$id]['#process'][] = 'form_theming_helpers_form_element_process';
+    }
+  }
+}
+
+/**
+ * Process callback for container elements.
+ */
+function form_theming_helpers_container_process($element, FormStateInterface $form_state, $form) {
+  $build_info = $form_state->getBuildInfo();
+  if (isset($build_info['base_form_id'])) {
+    // Use the base form ID for a suggestion.
+    $element['#suggestions'][] = $build_info['base_form_id'] . '__container';
+  }
+  if (isset($build_info['form_id'])) {
+    // And the form ID.
+    $element['#suggestions'][] = $build_info['form_id'] . '__container';
+  }
+  // A possible extension point here is to define a new config entity that maps
+  // form IDs to a new suggestion. For example contact message form has ID
+  // 'contact_message_form' however the styleguide might nominate
+  // 'feedback_form' - if you had a config entity that mapped Drupal IDs to
+  // styleguide block names, you could use a translation service here to
+  // transpose from the Drupal IDs to the styleguide ones.
+  return $element;
+}
+
+/**
+ * Process callback for form elements.
+ */
+function form_theming_helpers_form_element_process($element, FormStateInterface $form_state, $form) {
+  $build_info = $form_state->getBuildInfo();
+  if (isset($build_info['base_form_id'])) {
+    // Use the base form ID for a suggestion.
+    $element['#suggestions'][] = $build_info['base_form_id'] . '__form_element';
+  }
+  if (isset($build_info['form_id'])) {
+    // And the form ID.
+    $element['#suggestions'][] = $build_info['form_id'] . '__form_element';
+  }
+  return $element;
+}
+
+/**
+ * Implements hook_theme_suggestions_HOOK_alter().
+ */
+function form_theming_helpers_theme_suggestions_container_alter(array &$suggestions, array $variables) {
+  $element = $variables['element'];
+  // Merge the element suggestions in.
+  if (isset($element['#suggestions'])) {
+    $suggestions = array_unique(array_merge($suggestions, $element['#suggestions']));
+  }
+}
+
+/**
+ * Implements hook_theme_suggestions_HOOK_alter().
+ */
+function form_theming_helpers_theme_suggestions_form_element_alter(array &$suggestions, array $variables) {
+  $element = $variables['element'];
+  // Merge the element suggestions in.
+  if (isset($element['#suggestions'])) {
+    $suggestions = array_unique(array_merge($suggestions, $element['#suggestions']));
+  }
+}
+
+/**
+ * Implements hook_theme_suggestions_HOOK_alter().
+ */
+function form_theming_helpers_theme_suggestions_form_element_label_alter(array &$suggestions, array $variables) {
+  $element = $variables['element'];
+  if (isset($element['#suggestions'])) {
+    $suggestions = array_unique(array_merge($suggestions, $element['#suggestions']));
+  }
+}
+
+/**
+ * Implements hook_preprocess_hook().
+ */
+function form_theming_helpers_preprocess_form_element(&$variables) {
+  $element = $variables['element'];
+  // Copy the element level suggestions to the label element.
+  if (isset($element['#suggestions']) && isset($variables['label'])) {
+    $variables['label']['#suggestions'] = array_map(function($item) {
+      return $item . '_label';
+    }, $element['#suggestions']);
+  }
+}
